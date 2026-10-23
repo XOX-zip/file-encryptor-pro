@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>File Encryptor · Web Pro</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🔐 File Encryptor <span class="ver">Pro</span></h1>
+      <div class="theme-toggle" id="themeToggle">
+        <button data-mode="system">系统</button>
+        <button data-mode="light">浅色</button>
+        <button data-mode="dark">深色</button>
+      </div>
+    </header>
+
+    <div class="card">
+      <h2>选择文件</h2>
+      <label class="file-picker" id="filePicker">
+        <input type="file" id="fileInput" hidden />
+        <span class="file-name" id="fileName">点击选择文件…</span>
+      </label>
+      <div class="hint" id="fileHint"></div>
+    </div>
+
+    <div class="card">
+      <h2>密码</h2>
+      <div class="input-with-buttons">
+        <input type="password" id="password" placeholder="输入加密 / 解密密码" autocomplete="new-password" />
+        <button type="button" class="btn-mini" id="togglePwdBtn">显示</button>
+        <button type="button" class="btn-mini" id="genPwdBtn">随机</button>
+      </div>
+      <div class="meter"><div class="meter-fill" id="pwdMeter"></div></div>
+      <div class="hint" id="pwdHint">密码强度：—</div>
+    </div>
+
+    <div class="card">
+      <h2>加密参数</h2>
+
+      <details class="setting-group" open>
+        <summary>基础参数</summary>
+        <div class="row">
+          <div class="form-group">
+            <label for="layers">加密层级</label>
+            <input type="number" id="layers" value="3" min="1" max="50" />
+            <div class="hint">1–50 层，每层使用独立派生密钥</div>
+          </div>
+          <div class="form-group">
+            <label for="cipherAlg">加密算法</label>
+            <select id="cipherAlg">
+              <option value="3" selected>AES-256-GCM（推荐）</option>
+              <option value="2">AES-192-GCM</option>
+              <option value="1">AES-128-GCM</option>
+            </select>
+            <div class="hint">AES-GCM 同时提供加密与完整性认证</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="setting-group">
+        <summary>密钥派生（KDF）</summary>
+        <div class="row">
+          <div class="form-group">
+            <label for="kdfHash">PBKDF2 哈希算法</label>
+            <select id="kdfHash">
+              <option value="1" selected>SHA-256（速度均衡）</option>
+              <option value="2">SHA-384（更安全）</option>
+              <option value="3">SHA-512（最强，最慢）</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="kdfMode">层密钥派生方式</label>
+            <select id="kdfMode">
+              <option value="hmac" selected>HMAC-SHA256</option>
+              <option value="hkdf">HKDF-SHA256</option>
+            </select>
+            <div class="hint">决定每一层子密钥的生成算法（选项会随上方哈希算法联动）</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="iterations">PBKDF2 迭代次数</label>
+          <input type="number" id="iterations" value="300000" min="10000" max="5000000" step="10000" />
+          <div class="preset-row" style="margin-top:8px;">
+            <button type="button" class="btn-mini" data-iter="100000">10 万</button>
+            <button type="button" class="btn-mini" data-iter="300000">30 万</button>
+            <button type="button" class="btn-mini" data-iter="600000">60 万</button>
+            <button type="button" class="btn-mini" data-iter="1000000">100 万</button>
+            <button type="button" class="btn-mini" data-iter="2000000">200 万</button>
+            <button type="button" class="btn-mini" data-iter="5000000">500 万</button>
+          </div>
+          <div class="hint">范围 10,000 – 5,000,000；越高越慢，暴力破解成本越大</div>
+        </div>
+      </details>
+
+      <details class="setting-group">
+        <summary>压缩设置</summary>
+        <div class="row">
+          <div class="form-group">
+            <label for="compAlg">压缩算法</label>
+            <select id="compAlg">
+              <option value="0">不压缩</option>
+              <option value="1">Deflate-Raw（最快）</option>
+              <option value="2">Deflate（标准）</option>
+              <option value="3" selected>GZIP（高压缩）</option>
+              <option value="4">⚡ 超级压缩（多轮叠加）</option>
+            </select>
+            <div class="hint">加密前先压缩，密文体积更小</div>
+          </div>
+          <div class="form-group" id="compRoundsGroup">
+            <label for="compRounds">超级压缩轮数</label>
+            <input type="number" id="compRounds" value="3" min="1" max="8" />
+            <div class="hint">仅「超级压缩」生效，1–8 轮</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="setting-group">
+        <summary>安全增强</summary>
+        <div class="form-group">
+          <label for="padSize">填充块大小</label>
+          <select id="padSize">
+            <option value="0" selected>不填充</option>
+            <option value="1">16 字节</option>
+            <option value="2">64 字节</option>
+            <option value="3">128 字节</option>
+            <option value="4">192 字节</option>
+            <option value="5">255 字节（最大合法块）</option>
+          </select>
+          <div class="hint">隐藏真实文件长度，抵御尺寸分析。上限 255 字节（受单字节填充长度编码限制）。</div>
+        </div>
+        <div class="form-group">
+          <label for="aad">AAD 附加认证数据（可选）</label>
+          <textarea id="aad" placeholder="例如：项目名 / 用户 ID / 备注。它不参与加密，但会被 GCM 认证——一旦不匹配解密必失败。"></textarea>
+          <div class="hint" style="color: var(--warn);">
+            ⚠️ AAD 不会写入文件本身：解密时必须输入与加密时<strong>完全一致</strong>的 AAD，否则解密会失败。
+          </div>
+        </div>
+      </details>
+
+      <details class="setting-group">
+        <summary>输出格式</summary>
+        <div class="form-group checkbox-group">
+          <input type="checkbox" id="hexMode" />
+          <label for="hexMode" style="margin:0;">输出为二进制文件（不勾选 → 16 进制文本）</label>
+        </div>
+        <div class="hint">默认输出 16 进制文本（.enc.hex）；勾选后输出二进制（.enc）。<br>解密时会自动识别两种格式，无需再手动切换。</div>
+      </details>
+
+      <details class="setting-group">
+        <summary>界面设置</summary>
+        <div class="form-group checkbox-group">
+          <input type="checkbox" id="hideScrollbar" />
+          <label for="hideScrollbar" style="margin:0;">隐藏页面滚动条（保留滚动能力）</label>
+        </div>
+        <div class="hint">去掉右侧粗大的滚动条，页面更干净；鼠标滚轮 / 触控板 / 键盘仍可滚动</div>
+      </details>
+
+      <details class="setting-group">
+        <summary>快速预设</summary>
+        <div class="preset-row">
+          <button type="button" class="btn-mini" data-preset="fast">🚀 快速</button>
+          <button type="button" class="btn-mini" data-preset="standard">🛡 标准</button>
+          <button type="button" class="btn-mini" data-preset="secure">🔒 安全</button>
+          <button type="button" class="btn-mini" data-preset="extreme">💎 极限</button>
+          <button type="button" class="btn-mini" id="resetBtn">↺ 恢复默认</button>
+        </div>
+        <div class="hint" id="presetHint"></div>
+      </details>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" id="encryptBtn">加密文件</button>
+        <button class="btn btn-secondary" id="decryptBtn">解密文件</button>
+      </div>
+
+      <div class="progress" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <div class="status" id="status"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
