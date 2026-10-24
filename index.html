@@ -17,15 +17,7 @@
       </div>
     </header>
 
-    <div class="card">
-      <h2>选择文件</h2>
-      <label class="file-picker" id="filePicker">
-        <input type="file" id="fileInput" hidden />
-        <span class="file-name" id="fileName">点击选择文件…</span>
-      </label>
-      <div class="hint" id="fileHint"></div>
-    </div>
-
+    <!-- 全局密码 -->
     <div class="card">
       <h2>密码</h2>
       <div class="input-with-buttons">
@@ -37,16 +29,63 @@
       <div class="hint" id="pwdHint">密码强度：—</div>
     </div>
 
-    <div class="card">
-      <h2>加密参数</h2>
+    <!-- 标签导航 -->
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="files">📁 文件</button>
+      <button class="tab" data-tab="text">📝 文本</button>
+      <button class="tab" data-tab="tools">🛠 工具箱</button>
+    </nav>
+
+    <!-- ==================== 文件标签页 ==================== -->
+    <section class="tab-panel active" data-panel="files">
+      <div class="card">
+        <h2>文件队列 <span class="badge" id="queueCount">0</span></h2>
+        <div class="file-picker" id="dropZone">
+          <div class="drop-icon">📁</div>
+          <div class="drop-title">点击选择 · 拖拽文件 · 或选择文件夹</div>
+          <div class="drop-sub">支持多文件批量处理</div>
+        </div>
+        <div class="file-actions">
+          <button class="btn-mini" id="addFilesBtn">＋ 添加文件</button>
+          <button class="btn-mini" id="addFolderBtn">＋ 添加文件夹</button>
+          <button class="btn-mini" id="clearQueueBtn">🗑 清空</button>
+        </div>
+        <div class="queue" id="fileList"></div>
+        <input type="file" id="fileInput" multiple hidden />
+        <input type="file" id="folderInput" webkitdirectory directory multiple hidden />
+      </div>
+
+      <div class="card">
+        <h2>批量操作</h2>
+        <div class="btn-group">
+          <button class="btn btn-primary" id="encryptBtn">🔒 批量加密</button>
+          <button class="btn btn-secondary" id="decryptBtn">🔓 批量解密</button>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-tertiary" id="autoBtn">🤖 自动识别（加密/解密）</button>
+          <button class="btn btn-danger" id="cancelBtn" disabled>⏹ 取消</button>
+        </div>
+
+        <div class="progress" id="progressBar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="status" id="status"></div>
+
+        <div class="btn-group" id="downloadGroup" style="display:none;">
+          <button class="btn btn-secondary" id="downloadAllBtn">⬇ 分别下载全部</button>
+          <button class="btn btn-secondary" id="zipDownloadBtn">📦 打包 ZIP 下载</button>
+          <button class="btn btn-mini" id="clearResultsBtn">🧹 清除结果</button>
+        </div>
+      </div>
 
       <details class="setting-group" open>
-        <summary>基础参数</summary>
+        <summary>⚙️ 高级加密参数</summary>
+
         <div class="row">
           <div class="form-group">
             <label for="layers">加密层级</label>
             <input type="number" id="layers" value="3" min="1" max="50" />
-            <div class="hint">1–50 层，每层使用独立派生密钥</div>
+            <div class="hint">1–50 层，每层独立派生密钥</div>
           </div>
           <div class="form-group">
             <label for="cipherAlg">加密算法</label>
@@ -55,31 +94,27 @@
               <option value="2">AES-192-GCM</option>
               <option value="1">AES-128-GCM</option>
             </select>
-            <div class="hint">AES-GCM 同时提供加密与完整性认证</div>
           </div>
         </div>
-      </details>
 
-      <details class="setting-group">
-        <summary>密钥派生（KDF）</summary>
         <div class="row">
           <div class="form-group">
-            <label for="kdfHash">PBKDF2 哈希算法</label>
+            <label for="kdfHash">PBKDF2 哈希</label>
             <select id="kdfHash">
-              <option value="1" selected>SHA-256（速度均衡）</option>
-              <option value="2">SHA-384（更安全）</option>
-              <option value="3">SHA-512（最强，最慢）</option>
+              <option value="1" selected>SHA-256</option>
+              <option value="2">SHA-384</option>
+              <option value="3">SHA-512</option>
             </select>
           </div>
           <div class="form-group">
-            <label for="kdfMode">层密钥派生方式</label>
+            <label for="kdfMode">层密钥派生</label>
             <select id="kdfMode">
               <option value="hmac" selected>HMAC-SHA256</option>
               <option value="hkdf">HKDF-SHA256</option>
             </select>
-            <div class="hint">决定每一层子密钥的生成算法（选项会随上方哈希算法联动）</div>
           </div>
         </div>
+
         <div class="form-group">
           <label for="iterations">PBKDF2 迭代次数</label>
           <input type="number" id="iterations" value="300000" min="10000" max="5000000" step="10000" />
@@ -91,34 +126,25 @@
             <button type="button" class="btn-mini" data-iter="2000000">200 万</button>
             <button type="button" class="btn-mini" data-iter="5000000">500 万</button>
           </div>
-          <div class="hint">范围 10,000 – 5,000,000；越高越慢，暴力破解成本越大</div>
         </div>
-      </details>
 
-      <details class="setting-group">
-        <summary>压缩设置</summary>
         <div class="row">
           <div class="form-group">
             <label for="compAlg">压缩算法</label>
             <select id="compAlg">
               <option value="0">不压缩</option>
-              <option value="1">Deflate-Raw（最快）</option>
-              <option value="2">Deflate（标准）</option>
-              <option value="3" selected>GZIP（高压缩）</option>
-              <option value="4">⚡ 超级压缩（多轮叠加）</option>
+              <option value="1">Deflate-Raw</option>
+              <option value="2">Deflate</option>
+              <option value="3" selected>GZIP</option>
+              <option value="4">⚡ 超级压缩（多轮）</option>
             </select>
-            <div class="hint">加密前先压缩，密文体积更小</div>
           </div>
           <div class="form-group" id="compRoundsGroup">
             <label for="compRounds">超级压缩轮数</label>
             <input type="number" id="compRounds" value="3" min="1" max="8" />
-            <div class="hint">仅「超级压缩」生效，1–8 轮</div>
           </div>
         </div>
-      </details>
 
-      <details class="setting-group">
-        <summary>安全增强</summary>
         <div class="form-group">
           <label for="padSize">填充块大小</label>
           <select id="padSize">
@@ -127,39 +153,31 @@
             <option value="2">64 字节</option>
             <option value="3">128 字节</option>
             <option value="4">192 字节</option>
-            <option value="5">255 字节（最大合法块）</option>
+            <option value="5">255 字节（最大）</option>
           </select>
-          <div class="hint">隐藏真实文件长度，抵御尺寸分析。上限 255 字节（受单字节填充长度编码限制）。</div>
         </div>
+
         <div class="form-group">
-          <label for="aad">AAD 附加认证数据（可选）</label>
-          <textarea id="aad" placeholder="例如：项目名 / 用户 ID / 备注。它不参与加密，但会被 GCM 认证——一旦不匹配解密必失败。"></textarea>
+          <label for="aad">AAD 附加认证数据</label>
+          <textarea id="aad" placeholder="例如：项目名 / 用户 ID / 备注。解密时必须输入完全一致的值。"></textarea>
           <div class="hint" style="color: var(--warn);">
-            ⚠️ AAD 不会写入文件本身：解密时必须输入与加密时<strong>完全一致</strong>的 AAD，否则解密会失败。
+            ⚠️ AAD 不写入文件：解密时输入不一致，解密必然失败。
           </div>
         </div>
-      </details>
 
-      <details class="setting-group">
-        <summary>输出格式</summary>
-        <div class="form-group checkbox-group">
+        <div class="checkbox-group">
           <input type="checkbox" id="hexMode" />
-          <label for="hexMode" style="margin:0;">输出为二进制文件（不勾选 → 16 进制文本）</label>
+          <label for="hexMode" style="margin:0;">加密输出为二进制文件（不勾选 → 16 进制文本）</label>
         </div>
-        <div class="hint">默认输出 16 进制文本（.enc.hex）；勾选后输出二进制（.enc）。<br>解密时会自动识别两种格式，无需再手动切换。</div>
+
+        <div class="checkbox-group" style="margin-top:10px;">
+          <input type="checkbox" id="keepOrigName" checked />
+          <label for="keepOrigName" style="margin:0;">解密时恢复原文件名（去掉 .enc / .enc.hex）</label>
+        </div>
       </details>
 
       <details class="setting-group">
-        <summary>界面设置</summary>
-        <div class="form-group checkbox-group">
-          <input type="checkbox" id="hideScrollbar" />
-          <label for="hideScrollbar" style="margin:0;">隐藏页面滚动条（保留滚动能力）</label>
-        </div>
-        <div class="hint">去掉右侧粗大的滚动条，页面更干净；鼠标滚轮 / 触控板 / 键盘仍可滚动</div>
-      </details>
-
-      <details class="setting-group">
-        <summary>快速预设</summary>
+        <summary>🎯 快速预设</summary>
         <div class="preset-row">
           <button type="button" class="btn-mini" data-preset="fast">🚀 快速</button>
           <button type="button" class="btn-mini" data-preset="standard">🛡 标准</button>
@@ -170,17 +188,117 @@
         <div class="hint" id="presetHint"></div>
       </details>
 
-      <div class="btn-group">
-        <button class="btn btn-primary" id="encryptBtn">加密文件</button>
-        <button class="btn btn-secondary" id="decryptBtn">解密文件</button>
+      <details class="setting-group">
+        <summary>🖥 界面设置</summary>
+        <div class="checkbox-group">
+          <input type="checkbox" id="hideScrollbar" />
+          <label for="hideScrollbar" style="margin:0;">隐藏页面滚动条（保留滚动能力）</label>
+        </div>
+      </details>
+    </section>
+
+    <!-- ==================== 文本标签页 ==================== -->
+    <section class="tab-panel" data-panel="text">
+      <div class="card">
+        <h2>📝 文本加密 / 解密</h2>
+        <div class="form-group">
+          <label for="textInput">输入</label>
+          <textarea id="textInput" rows="6" placeholder="要加密的明文，或要解密的密文…"></textarea>
+        </div>
+        <div class="row">
+          <div class="form-group">
+            <label for="textEncoding">密文编码</label>
+            <select id="textEncoding">
+              <option value="hex" selected>十六进制（hex）</option>
+              <option value="base64">Base64</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>操作</label>
+            <div class="btn-group" style="margin-top:0;">
+              <button class="btn btn-primary" id="textEncryptBtn">加密</button>
+              <button class="btn btn-secondary" id="textDecryptBtn">解密</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>输出</label>
+          <textarea id="textOutput" rows="6" readonly placeholder="结果会显示在这里…"></textarea>
+        </div>
+        <div class="btn-group">
+          <button class="btn-mini" id="copyOutputBtn">📋 复制结果</button>
+          <button class="btn-mini" id="useAsInputBtn">↕ 结果作为输入</button>
+          <button class="btn-mini" id="clearTextBtn">🗑 清空</button>
+        </div>
+        <div class="status" id="textStatus"></div>
+      </div>
+    </section>
+
+    <!-- ==================== 工具箱标签页 ==================== -->
+    <section class="tab-panel" data-panel="tools">
+      <div class="card">
+        <h2>🔎 哈希计算</h2>
+        <div class="form-group">
+          <label for="hashInput">输入文本（UTF-8）</label>
+          <textarea id="hashInput" rows="3" placeholder="输入要计算哈希的文本…"></textarea>
+        </div>
+        <div class="preset-row">
+          <button class="btn-mini" data-hash="SHA-256">SHA-256</button>
+          <button class="btn-mini" data-hash="SHA-384">SHA-384</button>
+          <button class="btn-mini" data-hash="SHA-512">SHA-512</button>
+          <button class="btn-mini" data-hash="crc32">CRC32</button>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label>结果</label>
+          <div class="hash-output" id="hashOutput">—</div>
+        </div>
       </div>
 
-      <div class="progress" id="progressBar">
-        <div class="progress-fill" id="progressFill"></div>
+      <div class="card">
+        <h2>🔑 密码生成器</h2>
+        <div class="form-group">
+          <label for="pwdLen">长度：<span id="pwdLenVal">20</span></label>
+          <input type="range" id="pwdLen" min="8" max="64" value="20" />
+        </div>
+        <div class="row">
+          <div class="form-group">
+            <div class="checkbox-group"><input type="checkbox" id="optUpper" checked /><label for="optUpper" style="margin:0;">A-Z 大写</label></div>
+            <div class="checkbox-group" style="margin-top:6px;"><input type="checkbox" id="optLower" checked /><label for="optLower" style="margin:0;">a-z 小写</label></div>
+          </div>
+          <div class="form-group">
+            <div class="checkbox-group"><input type="checkbox" id="optDigits" checked /><label for="optDigits" style="margin:0;">0-9 数字</label></div>
+            <div class="checkbox-group" style="margin-top:6px;"><input type="checkbox" id="optSymbols" checked /><label for="optSymbols" style="margin:0;">!@#$ 符号</label></div>
+          </div>
+        </div>
+        <div class="input-with-buttons">
+          <input type="text" id="generatedPwd" readonly placeholder="点击生成…" />
+          <button class="btn-mini" id="genPwd2Btn">生成</button>
+          <button class="btn-mini" id="copyPwdBtn">复制</button>
+        </div>
       </div>
 
-      <div class="status" id="status"></div>
-    </div>
+      <div class="card">
+        <h2>🎲 随机字节生成</h2>
+        <div class="row">
+          <div class="form-group">
+            <label for="randLen">字节数</label>
+            <input type="number" id="randLen" value="32" min="1" max="4096" />
+          </div>
+          <div class="form-group">
+            <label for="randEncoding">编码</label>
+            <select id="randEncoding">
+              <option value="hex" selected>十六进制</option>
+              <option value="base64">Base64</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-with-buttons">
+          <input type="text" id="randOutput" readonly placeholder="点击生成…" />
+          <button class="btn-mini" id="genRandBtn">生成</button>
+          <button class="btn-mini" id="copyRandBtn">复制</button>
+        </div>
+      </div>
+    </section>
   </div>
 
   <script src="app.js"></script>
